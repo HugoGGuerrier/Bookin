@@ -1,34 +1,45 @@
 {
-  "private": true,
   "name": "Bookin",
-  "productName": "Bookin",
-  "description": "The front-end of the library web app",
-  "version": "0.0.0",
-  "license": "MIT",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "poi",
-    "build": "poi build",
-    "report": "poi build --bundle-report",
-    "serve": "serve dist --single",
-    "test": "tyu"
-  },
-  "author": {
-    "name": "HugoGGuerrier",
-    "email": "hugogguerrier@gmail.com"
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "core-js": "^3.6.5",
     "material-design-icons": "^3.0.1",
     "materialize-css": "^1.0.0",
-    "normalize.css": "^7.0.0",
-    "object-assign": "^4.1.1",
-    "offline-plugin": "^4.8.0",
-    "promise-polyfill": "^6.0.2"
+    "vue": "^3.0.0",
+    "vue-router": "^3.5.3"
   },
   "devDependencies": {
-    "poi": "^12.10.3",
-    "poi-preset-bundle-report": "^2.0.0",
-    "poi-preset-offline": "^9.0.0",
-    "serve": "^13.0.2",
-    "tyu": "^1.0.4"
-  }
+    "@vue/cli-plugin-babel": "~4.5.0",
+    "@vue/cli-plugin-eslint": "~4.5.0",
+    "@vue/cli-service": "~4.5.0",
+    "@vue/compiler-sfc": "^3.0.0",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^6.7.2",
+    "eslint-plugin-vue": "^7.0.0"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "babel-eslint"
+    },
+    "rules": {}
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
 }
