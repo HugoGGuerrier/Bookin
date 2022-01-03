@@ -1,17 +1,21 @@
 <template>
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js App" />
+  <div class="home center-align">
+    <img alt="Vue logo" src="logo.png"/>
+    <h1>Welcome on Bookin, the online open library project</h1>
   </div>
 </template>
 
 <script>
-import HelloWorld from "@/components/HelloWorld.vue";
 
 export default {
-  name: "Home",
-  components: {
-    HelloWorld,
-  },
-};
+  name: 'Home'
+}
 </script>
+
+<style scoped>
+
+.home img {
+  height: 200px;
+}
+
+</style>
