@@ -1,13 +1,13 @@
 <template>
-    <p>BOOK CARD</p>
+  <p>BOOK CARD</p>
 </template>
 
 <script>
 export default {
-    name: 'BookCard',
-    
-    props: {
-        name: String
-    }
+  name: 'BookCard',
+
+  props: {
+    name: String
+  }
 }
 </script>
