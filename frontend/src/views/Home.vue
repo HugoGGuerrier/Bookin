@@ -1,7 +1,7 @@
 <template>
   <div class="home center-align">
     <img alt="Vue logo" src="logo.png"/>
-    <h1>Welcome on Bookin, the online open library project</h1>
+    <h2>Welcome on Bookin, the online open library project</h2>
   </div>
 </template>
 
@@ -16,6 +16,7 @@ export default {
 
 .home img {
   height: 200px;
+  margin-top: 2rem;
 }
 
 </style>

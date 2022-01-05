@@ -2,6 +2,16 @@
   <div class="container">
 
     <div class="row">
+      <h3 class="col s12 center-align grey-text text-darken-3">About Bookin</h3>
+    </div>
+
+    <div class="row grey-text text-darken-3">
+      <p>Authors : Emilie SIAU and Hugo GUERRIER<br>
+      Powered by Vue.js 3 and Spring Boot<br>
+      Get the project sources <a href="https://github.com/HugoGGuerrier/Bookin" target="new">here</a></p>
+    </div>
+
+    <div class="row">
       <div class="col s12">
         <div class="card">
           <div class="card-content grey-text text-darken-2">

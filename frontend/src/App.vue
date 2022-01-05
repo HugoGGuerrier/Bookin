@@ -1,4 +1,5 @@
 <template>
+
   <div>
     <nav class="blue-grey darken-2">
       <div class="nav-wrapper">
@@ -13,6 +14,7 @@
     </nav>
     <router-view />
   </div>
+
 </template>
 
 <script>
@@ -32,6 +34,30 @@ export default {
 
 nav .nav-wrapper .brand-logo {
   padding-left: 0.7rem;
+}
+
+.input-field input {
+  border-bottom: 1px solid #424242 !important;
+  box-shadow: 0 0px 0 0 #424242 !important;
+  color: #424242;
+}
+
+.input-field input:focus {
+  border-bottom: 1px solid #424242 !important;
+  box-shadow: 0 0px 0 0 #424242 !important;
+  color: #424242;
+}
+
+.input-field label {
+  color: #424242a9 !important;
+}
+
+.input-field input:focus + label {
+  color: #424242 !important;
+}
+
+.input-field .prefix {
+  color: #424242 !important;
 }
 
 </style>
