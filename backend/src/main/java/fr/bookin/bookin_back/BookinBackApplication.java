@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class BookinBackApplication {
 
 	public static void main(String[] args) {
+		// Start the Spring application
 		SpringApplication.run(BookinBackApplication.class, args);
 	}
 
