@@ -12,9 +12,9 @@ Before building and running, you must install all these tools
 
 ### Auto build
 
-* If you're using Unix then you're a true programmer and a superior mind, just run `autobuild.sh` to automatically build the Bookin app in a jar.
-* If you're using macOS, you can try to run the `autobuild.sh` script. If it fails, build the web app manually.
-* If you're using Windows then build manually you peasant.
+* If you're using Unix then you're a true programmer and a have superior mind, just run `autobuild.sh` to automatically build the Bookin app in a jar.
+* If you're using macOS, you can try to run the `autobuild.sh` script. If it fails, build the app manually.
+* If you're using Windows then build manually you peasant (or run `autobuild.bat` like the peasant you are).
 
 ### Manual build
 
