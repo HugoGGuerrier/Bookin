@@ -34,11 +34,11 @@ public class Init {
     public void init() {
         try {
 
-            // Check the database structure and correct it if needed
-            database.verify();
+            // Initialise the database
+            database.init();
 
         } catch (Exception e) {
-            // Throw a new uncatchable exception to fail startup
+            // Throw a new un-catchable exception to fail startup
             throw new StartupException(e);
         }
     }
