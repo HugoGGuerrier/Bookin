@@ -5,7 +5,7 @@
 Before building and running, you must install all these tools
 
 * npm : [The node package manager](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
-* JDK 11 The java developpment kit 11
+* JDK 11 : The java developpment kit 11
 * maven : [The java building tool](https://maven.apache.org/install.html)
 
 ## How to build Bookin
@@ -26,4 +26,9 @@ Before building and running, you must install all these tools
 * The runnable JAR is in `./backend/src/target` with a name like `bookin_back-x.x.x-SNAPSHOT.jar`
 
 ### How to deploy and run Bookin
+
+## The book downloader
+
+The book downloader is a Java application that can download books from the Guttenberg project API and create a book database for Bookin. For now it only support Guttenberg project but other sources may appear in the future.
+To use it, go into the project file and read the README.md.
 
