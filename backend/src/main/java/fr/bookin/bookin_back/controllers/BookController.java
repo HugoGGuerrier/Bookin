@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author Hugo GUERRIER
  */
 @RestController
-@RequestMapping("/api/v1/book")
+@RequestMapping("/api/book")
 public class BookController {
 
     // ===== Attributes =====

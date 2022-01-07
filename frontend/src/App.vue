@@ -1,5 +1,6 @@
 <template>
   <div>
+
     <nav class="blue-grey darken-2">
       <div class="nav-wrapper">
         <router-link
@@ -41,11 +42,14 @@
         </ul>
       </div>
     </nav>
+
     <router-view />
+
+    <p id="dev" v-if="dev">DEV ENV</p>
   </div>
 </template>
 
-<script>
+<script lang="js">
 import { computed } from '@vue/reactivity'
 
 export default {
@@ -86,6 +90,13 @@ nav .nav-wrapper .brand-logo {
 
 .input-field .prefix {
   color: #424242 !important;
+}
+
+#dev {
+  position: fixed;
+  margin: 0;
+  bottom: 0.5rem;
+  right: 0.5rem;
 }
 
 </style>

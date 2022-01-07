@@ -8,8 +8,21 @@
 
     <div class="row grey-text text-darken-3">
       <p>
+        Version : 0.1.0<br><br>
         Authors : Emilie SIAU and Hugo GUERRIER<br>
-        Powered by Vue.js 3 and Spring Boot<br>
+        Powered by : <a
+          href="https://vuejs.org/"
+          target="new"
+        >Vue.js 3</a>
+        | <a
+          href="https://spring.io/projects/spring-boot"
+          target="new"
+        >Spring Boot</a>
+        | <a
+          href="http://jsondb.io/"
+          target="new"
+        >JsonDB</a>
+        <br>
         Get the project sources <a
           href="https://github.com/HugoGGuerrier/Bookin"
           target="new"

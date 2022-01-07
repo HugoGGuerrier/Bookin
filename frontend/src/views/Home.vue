@@ -5,23 +5,16 @@
       src="logo.png"
     >
     <h2>Welcome on Bookin, the online open library project</h2>
-    <p v-if="dev">DEV MODE</p>
   </div>
 </template>
 
-<script>
-
+<script lang="js">
 export default {
-  name: 'Home',
-
-  data () {
-    const dev = process.env.NODE_ENV === 'development'
-    return { dev }
-  }
+  name: 'Home'
 }
 </script>
 
-<style scoped>
+<style lang="css" scoped>
 
 .home img {
   height: 200px;

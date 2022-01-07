@@ -23,7 +23,7 @@ Before building and running, you must install all these tools
 * (3) Copy all files and folders inside `./frontend/dist` directory
 * (4) Paste them in the `./backend/src/main/ressources/static` directory
 * (5) Run `mvn clean install spring-boot:repackage` inside the `./backend` directory
-* The runnable JAR is in `./backend/src/target` with a name like `bookin_back-x.x.x-SNAPSHOT.jar`
+* The runnable JAR is in `./backend/src/target` with a name like `bookin_back-x.x.x.jar`
 
 ### How to deploy and run Bookin
 
