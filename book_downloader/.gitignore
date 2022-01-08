@@ -1,3 +1,10 @@
+# IDEA files
 .idea
 *.iml
+
+# Applciation files
 config.json
+
+# Maven files
+target
+dependency-reduced-pom.xml
