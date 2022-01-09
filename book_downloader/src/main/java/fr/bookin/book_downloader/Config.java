@@ -7,6 +7,7 @@ import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Config {
 
@@ -24,11 +25,17 @@ public class Config {
     /** The book provider */
     private String provider;
 
-    /** The list of the wanted language */
-    private ArrayList<String> lang;
-
     /** The path where the books are going to be exported */
     private String exportPath;
+
+    /** The list of the wanted language */
+    private List<String> lang;
+
+    /** The minimum of word for a book */
+    private long minWordCount;
+
+    /** The number of books you want to download */
+    private long bookCount;
 
 
     // ===== Constructors =====
@@ -55,6 +62,62 @@ public class Config {
     public static Config getInstance() {
         if(instance == null) instance = new Config();
         return instance;
+    }
+
+
+    // ===== Getters =====
+
+
+    public File getConfigFile() {
+        return configFile;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public String getExportPath() {
+        return exportPath;
+    }
+
+    public List<String> getLang() {
+        return lang;
+    }
+
+    public long getMinWordCount() {
+        return minWordCount;
+    }
+
+    public long getBookCount() {
+        return bookCount;
+    }
+
+
+    // ===== Setters =====
+
+
+    public static void setInstance(Config instance) {
+        Config.instance = instance;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public void setExportPath(String exportPath) {
+        this.exportPath = exportPath;
+    }
+
+    public void setLang(List<String> lang) {
+        this.lang = lang;
+    }
+
+    public void setMinWordCount(long minWordCount) {
+        this.minWordCount = minWordCount;
+    }
+
+    public void setBookCount(long bookCount) {
+        this.bookCount = bookCount;
     }
 
 
@@ -88,8 +151,10 @@ public class Config {
      */
     private void loadDefaultConfig() {
         provider = "";
-        lang = new ArrayList<>();
         exportPath = "./";
+        lang = new ArrayList<>();
+        minWordCount = 0;
+        bookCount = -1;
     }
 
     /**
@@ -103,8 +168,10 @@ public class Config {
 
         // Write the value in the json
         configJson.put("provider", provider);
-        configJson.put("lang", lang);
         configJson.put("exportPath", exportPath);
+        configJson.put("lang", lang);
+        configJson.put("minWordCount", minWordCount);
+        configJson.put("bookCount", bookCount);
 
         // Write the config into the file
         BufferedWriter writer = new BufferedWriter(new FileWriter(configFile));
@@ -126,11 +193,15 @@ public class Config {
         // Get the configuration from the json
         provider = (String) configJson.getOrDefault("provider", "");
 
+        exportPath = (String) configJson.getOrDefault("exportPath", "./");
+
         lang = new ArrayList<>();
         JSONArray langArray = (JSONArray) configJson.getOrDefault("lang", new JSONArray());
         lang.addAll(langArray);
 
-        exportPath = (String) configJson.getOrDefault("exportPath", "./");
+        minWordCount = (Long) configJson.getOrDefault("minWordCount", 0);
+
+        bookCount = (Long) configJson.getOrDefault("bookCount", -1);
     }
 
     /**
@@ -139,8 +210,11 @@ public class Config {
     public void printConfig() {
         String builder = "Config file : " + configFile.toString() +
                 "\n  provider = " + provider +
+                "\n  exportPath = " + exportPath + " (" + new File(exportPath).getAbsolutePath() + ")" +
                 "\n  lang = " + lang.toString() +
-                "\n  exportPath = " + exportPath + " (" + new File(exportPath).getAbsolutePath() + ")";
+                "\n  minWordCount = " + minWordCount +
+                "\n  bookCount = " + bookCount;
+
 
         System.out.println(builder);
     }

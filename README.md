@@ -25,10 +25,11 @@ Before building and running, you must install all these tools
 * (5) Run `mvn clean install spring-boot:repackage` inside the `./backend` directory
 * The runnable JAR is in `./backend/src/target` with a name like `bookin_back-x.x.x.jar`
 
-### How to deploy and run Bookin
+## How to deploy and run Bookin
 
-## The book downloader
+### How to populate the book database
 
-The book downloader is a Java application that can download books from the Guttenberg project API and create a book database for Bookin. For now it only support Guttenberg project but other sources may appear in the future.
-To use it, go into the project file and read the README.md.
+You can run the website without pre-populated database and add books manually, but if you want to create a book database you can use the Book downloader application.
+All instructions are available in the package.
+
 
