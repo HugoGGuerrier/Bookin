@@ -4,6 +4,7 @@
 
 # Applciation files
 config.json
+gutenberg
 
 # Maven files
 target

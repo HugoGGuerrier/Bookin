@@ -15,6 +15,9 @@ public class ProviderConfig {
     // ===== Attributes =====
 
 
+    /** The export path */
+    private String exportPath;
+
     /** The possible language */
     private List<String> lang;
 
@@ -31,11 +34,13 @@ public class ProviderConfig {
     /**
      * Create a new provider config with all needed parameters
      *
+     * @param exportPath The export path
      * @param lang The lang list
      * @param minWordCount The minimum word count
      * @param bookCount The number of book to download, -1 is for all books
      */
-    public ProviderConfig(List<String> lang, long minWordCount, long bookCount) {
+    public ProviderConfig(String exportPath, List<String> lang, long minWordCount, long bookCount) {
+        this.exportPath = exportPath;
         this.lang = lang;
         this.minWordCount = minWordCount;
         this.bookCount = bookCount;
@@ -45,7 +50,7 @@ public class ProviderConfig {
      * Create a new provider config with the default value
      */
     public ProviderConfig() {
-        this(null, 0, -1);
+        this(null, null, 0, -1);
     }
 
     /**
@@ -54,12 +59,16 @@ public class ProviderConfig {
      * @param config The application config
      */
     public ProviderConfig(Config config) {
-        this(config.getLang(), config.getMinWordCount(), config.getBookCount());
+        this(config.getExportPath(), config.getLang(), config.getMinWordCount(), config.getBookCount());
     }
 
 
     // ===== Getters =====
 
+
+    public String getExportPath() {
+        return exportPath;
+    }
 
     public List<String> getLang() {
         return lang;
@@ -76,6 +85,10 @@ public class ProviderConfig {
 
     // ===== Setters =====
 
+
+    public void setExportPath(String exportPath) {
+        this.exportPath = exportPath;
+    }
 
     public void setLang(List<String> lang) {
         this.lang = lang;
