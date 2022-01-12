@@ -9,6 +9,12 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class represents the configuration of the book downloader
+ *
+ * @author Emilie SIAU
+ * @author Hugo GUERRIER
+ */
 public class Config {
 
     // ===== Attributes =====

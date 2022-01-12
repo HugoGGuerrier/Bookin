@@ -5,6 +5,9 @@ import fr.bookin.book_downloader.providers.IProvider;
 import fr.bookin.book_downloader.providers.ProviderConfig;
 import fr.bookin.book_downloader.providers.ProviderException;
 
+/**
+ * Main entry point
+ */
 public class Main {
     public static void main(String[] args) {
 
