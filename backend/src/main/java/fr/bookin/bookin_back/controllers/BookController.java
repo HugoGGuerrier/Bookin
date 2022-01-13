@@ -1,11 +1,17 @@
 package fr.bookin.bookin_back.controllers;
 
+import fr.bookin.bookin_back.database.Book;
 import fr.bookin.bookin_back.database.Database;
+import jdk.jfr.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.util.LinkedList;
 
 /**
  * This controller handle all request for the books manipulation
@@ -14,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author Hugo GUERRIER
  */
 @RestController
-@RequestMapping("/api/book")
+@RequestMapping("/api/books")
 public class BookController {
 
     // ===== Attributes =====
@@ -36,17 +42,44 @@ public class BookController {
      * @return The JSON response of the search
      */
     @GetMapping("")
-    String test(
+    ResponseEntity<String> getBooks(
             @RequestParam(name = "q") String query,
             @RequestParam(name = "advanced", required = false) String advancedString
     ) {
         // Cast the advanced parameter to a boolean
         boolean advanced = Boolean.parseBoolean(advancedString);
 
-        if(advanced) {
-            return "advanced " + query;
+        // TODO
+        return null;
+    }
+
+    @PostMapping("")
+    ResponseEntity<String> addBook(
+            @RequestParam(name = "title") String title,
+            @RequestParam(name = "authors") String[] authors,
+            @RequestParam(name = "lang") String lang,
+            @RequestParam(name = "file") MultipartFile file,
+            HttpServletRequest request
+    ) {
+        // Verify the session
+        if(request.getSession(false) != null && request.getSession(false).getAttribute("user") != null) {
+
+            // Create the new book
+            Book newBook = database.addBook(title, authors, lang);
+
+            // Verify the file type
+            if("text/plain".equals(file.getContentType())) {
+                // Save the file
+                File newFile = new File(database.getBooksDirectory() + "/" + newBook.getId() + ".txt");
+
+                return ResponseEntity.ok("{success:true}");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("{success:false, msg='Server only accept plain text files for now'}");
+            }
         }
-        return query;
+
+        // Return the unauthorized message
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{success:false, msg='You are not an admin'}");
     }
 
 }
