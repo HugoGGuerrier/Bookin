@@ -2,7 +2,8 @@ package fr.bookin.bookin_back.controllers;
 
 import fr.bookin.bookin_back.database.Book;
 import fr.bookin.bookin_back.database.Database;
-import jdk.jfr.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,8 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.util.LinkedList;
+import java.io.*;
 
 /**
  * This controller handle all request for the books manipulation
@@ -22,6 +22,13 @@ import java.util.LinkedList;
 @RestController
 @RequestMapping("/api/books")
 public class BookController {
+
+    // ===== Macros =====
+
+
+    /** The logger */
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookController.class);
+
 
     // ===== Attributes =====
 
@@ -63,18 +70,29 @@ public class BookController {
     ) {
         // Verify the session
         if(request.getSession(false) != null && request.getSession(false).getAttribute("user") != null) {
-
-            // Create the new book
-            Book newBook = database.addBook(title, authors, lang);
-
             // Verify the file type
-            if("text/plain".equals(file.getContentType())) {
-                // Save the file
-                File newFile = new File(database.getBooksDirectory() + "/" + newBook.getId() + ".txt");
+            if("text/plain".equals(file.getContentType()) && !file.isEmpty()) {
 
-                return ResponseEntity.ok("{success:true}");
+                // Create the new book
+                Book newBook = database.addBook(title, authors, lang);
+
+                // Save the file
+                try {
+                    File newFile = new File(database.getBooksDirectory() + "/" + newBook.getId() + ".txt");
+                    OutputStream outputStream = new FileOutputStream(newFile);
+                    outputStream.write(file.getBytes());
+                    outputStream.close();
+
+                    database.addBookToIndex(newBook);
+
+                    return ResponseEntity.ok("{success:true}");
+                } catch (Exception e) {
+                    LOGGER.error("Cannot save the book file", e);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{success:false, msg='Cannot save the book file'}");
+                }
+
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("{success:false, msg='Server only accept plain text files for now'}");
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("{success:false, msg='Server only accept non empty plain text files for now'}");
             }
         }
 

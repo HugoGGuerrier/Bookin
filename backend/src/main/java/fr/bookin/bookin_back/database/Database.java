@@ -5,11 +5,10 @@ import fr.bookin.bookin_back.exceptions.DatabaseException;
 import io.jsondb.JsonDBTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.File;
-import java.util.List;
-import java.util.Scanner;
+import java.nio.file.Files;
+import java.util.*;
 
 /**
  * This class represents the database communication singleton
@@ -41,19 +40,11 @@ public class Database {
     /** The JSON database connection */
     private JsonDBTemplate jsonDb;
 
-    /** The cipher secret key */
-    @Value("${cipher.key}")
-    private String cipherKey;
-
-    /** The cipher salt value */
-    @Value("${cipher.salt}")
-    private String cipherSalt;
+    /** The book index table */
+    private final Map<String, Map<Integer, Integer>> indexTable;
 
     /** The max book ID */
-    private long nextBookId;
-
-    /** The max user ID */
-    private long nextUserId;
+    private int nextBookId;
 
 
     // ===== Constructors =====
@@ -69,8 +60,8 @@ public class Database {
         this.databaseFileLocation = baseDir + "/data";
         this.booksDirectory = baseDir + "/data/books";
         this.jsonDb = null;
+        this.indexTable = new HashMap<>();
         this.nextBookId = 0;
-        this.nextUserId = 0;
     }
 
 
@@ -131,6 +122,36 @@ public class Database {
         nextBookId = books.get(0).getId() + 1;
     }
 
+    /**
+     * Create from the book in the database, the index table and store it in the database
+     */
+    private void initIndex() {
+        // Get all books and prepare the new index table
+        List<Book> books = getBooks();
+        long currentBook = 1L;
+
+        // Log the indexing because it's a big operation
+        LOGGER.info("Start the indexing...");
+
+        // For each book add words in the index table
+        for(Book book : books) {
+
+            // Display the progression
+            System.out.print("Progress : " + currentBook + "/" + books.size() + "\r");
+            System.out.flush();
+
+            // Add the book
+            addBookToIndex(book);
+
+            // Increase the book count
+            currentBook++;
+
+        }
+
+        // Log the indexing end
+        LOGGER.info("Indexing done !");
+    }
+
 
     // ===== Class methods =====
 
@@ -164,13 +185,15 @@ public class Database {
             // Create the needed collections
             if(!jsonDb.collectionExists(Book.class)) jsonDb.createCollection(Book.class);
             if(!jsonDb.collectionExists(User.class)) jsonDb.createCollection(User.class);
-            if(!jsonDb.collectionExists(Index.class)) jsonDb.createCollection(Index.class);
 
             // Verify that there is a super admin
             verifySuperAdmin();
 
             // Get the next IDs once for all
             getNextIds();
+
+            // Initialize the index of all books
+            initIndex();
         } catch (Exception e) {
             LOGGER.error("Cannot initialise the database !");
             throw new DatabaseException(e);
@@ -226,6 +249,15 @@ public class Database {
     // --- For Books
 
     /**
+     * Get all books in the database
+     *
+     * @return The list with all the books
+     */
+    public List<Book> getBooks() {
+        return jsonDb.findAll(Book.class);
+    }
+
+    /**
      * Create a new book in the database
      *
      * @param title The book title
@@ -233,7 +265,7 @@ public class Database {
      * @param lang The book lang
      * @return The newly created book
      */
-    public Book addBook(String title, String[] authors, String lang) {
+    public synchronized Book addBook(String title, String[] authors, String lang) {
         // Create the new book
         Book newBook = new Book();
         newBook.setId(nextBookId++);
@@ -244,12 +276,52 @@ public class Database {
         }
 
         // Add in the database
-        // jsonDb.insert(newBook);
+        jsonDb.insert(newBook);
 
         // Return the book
         return newBook;
     }
 
-    // --- For Index
+    // --- For index
+
+    /**
+     * Add a book to the index
+     *
+     * @param book The book to add
+     */
+    public void addBookToIndex(Book book) {
+        // Verify that the book file exists, and read it
+        File bookFile = new File(booksDirectory + "/" + book.getId() + ".txt");
+        if(!bookFile.exists()) {
+            LOGGER.error("File for book " + book.getId() + " does not exist");
+            jsonDb.remove(book, Book.class);
+            return;
+        }
+
+        String bookContent = "";
+
+        try {
+            bookContent = Files.readString(bookFile.toPath());
+        } catch (Exception e) {
+            LOGGER.error("Cannot open " + book.getId() + " book file", e);
+            return;
+        }
+
+        // Get the book words and add it to the index table
+        bookContent = bookContent.replaceAll("[\\[\\]\"'_=+*/.|{}()~#&%<>`]", " ");
+        String[] words = bookContent.split("\\s+");
+
+        for(String word : words) {
+            // Set the word to the lower case
+            word = word.toLowerCase(Locale.ROOT);
+
+            // Get the word count table of an empty table if it does not exist
+            Map<Integer, Integer> wordCountTable = indexTable.getOrDefault(word, new HashMap<>());
+            wordCountTable.put(book.getId(), wordCountTable.getOrDefault(book.getId(), 0) + 1);
+
+            // Put the count table if absent from the index table
+            indexTable.put(word, wordCountTable);
+        }
+    }
 
 }

@@ -53,9 +53,9 @@ public class LoginController {
         if(user != null) {
             if(request.getSession().getAttribute("user") == null) {
                 request.getSession().setAttribute("user", user);
-                return ResponseEntity.status(HttpStatus.ACCEPTED).body("{success:true}");
+                return ResponseEntity.ok("{success:true}");
             } else {
-                return ResponseEntity.status(HttpStatus.I_AM_A_TEAPOT).body("{success:false, msg='Already logged in'}");
+                return ResponseEntity.status(HttpStatus.I_AM_A_TEAPOT).body("{success:false, msg='You are already logged in'}");
             }
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{success:false, msg='Wrong mail or password'}");
@@ -78,7 +78,7 @@ public class LoginController {
         }
 
         // Return the unauthorized message
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{success:false, msg='You are not an admin'}");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{success:false, msg='You are not logged in'}");
     }
 
 }
