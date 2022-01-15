@@ -5,6 +5,7 @@ import fr.bookin.bookin_back.exceptions.DatabaseException;
 import io.jsondb.JsonDBTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -42,6 +43,10 @@ public class Database {
 
     /** The book index table */
     private final Map<String, Map<Integer, Integer>> indexTable;
+
+    /** If the index is going to be stored (NOT YET AVAILABLE) */
+    @Value("${app.store_index}")
+    private boolean storeIndex;
 
     /** The max book ID */
     private int nextBookId;
@@ -308,7 +313,7 @@ public class Database {
         }
 
         // Get the book words and add it to the index table
-        bookContent = bookContent.replaceAll("[\\[\\]\"'_=+*/.|{}()~#&%<>`]", " ");
+        bookContent = bookContent.replaceAll("[\\[\\]\"_=+*/.|{}()~#&%<>`]", " ");
         String[] words = bookContent.split("\\s+");
 
         for(String word : words) {
