@@ -12,7 +12,7 @@
 
 	<groupId>fr.bookin</groupId>
 	<artifactId>bookin_back</artifactId>
-	<version>0.1.0</version>
+	<version>0.2.2</version>
 	<name>bookin_back</name>
 
 	<description>The backend of the Bookin project</description>

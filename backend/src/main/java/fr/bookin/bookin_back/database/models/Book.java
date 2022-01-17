@@ -1,4 +1,4 @@
-package fr.bookin.bookin_back.database;
+package fr.bookin.bookin_back.database.models;
 
 import io.jsondb.annotation.Document;
 import io.jsondb.annotation.Id;
@@ -23,13 +23,17 @@ public class Book {
     private String title;
     private List<String> authors;
     private String lang;
+    private long wordCount;
 
 
     // ===== Constructors =====
 
 
     public Book() {
+        this.title = null;
         this.authors = new ArrayList<>();
+        this.lang = null;
+        this.wordCount = 0;
     }
 
 
@@ -50,6 +54,10 @@ public class Book {
 
     public String getLang() {
         return lang;
+    }
+
+    public long getWordCount() {
+        return wordCount;
     }
 
 
@@ -80,6 +88,10 @@ public class Book {
         this.lang = lang;
     }
 
+    public void setWordCount(long wordCount) {
+        this.wordCount = wordCount;
+    }
+
 
     // ===== Override methods =====
 
@@ -91,6 +103,7 @@ public class Book {
                 " title=" + title +
                 " authors=" + authors +
                 " lang=" + lang +
+                " wordCount=" + wordCount +
                 "}";
     }
 

@@ -3,6 +3,10 @@ import App from './App.vue'
 import router from './router'
 import 'materialize-css/dist/css/materialize.min.css'
 import 'material-design-icons/iconfont/material-icons.css'
+import axios from 'axios'
+
+// Set the axios credential
+axios.defaults.withCredentials = true
 
 // Create the Vue application
 const app = createApp(App)

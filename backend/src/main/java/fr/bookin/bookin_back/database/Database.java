@@ -1,6 +1,9 @@
 package fr.bookin.bookin_back.database;
 
-import fr.bookin.bookin_back.Utils;
+import fr.bookin.bookin_back.database.models.Book;
+import fr.bookin.bookin_back.database.models.User;
+import fr.bookin.bookin_back.utils.Utils;
+import fr.bookin.bookin_back.database.splitters.Splitters;
 import fr.bookin.bookin_back.exceptions.DatabaseException;
 import io.jsondb.JsonDBTemplate;
 import org.slf4j.Logger;
@@ -108,6 +111,7 @@ public class Database {
             System.out.print("Super admin password : ");
             String password = scanner.nextLine();
             String hashedPass = Utils.hashString(password);
+            scanner.close();
 
             // Create the new super admin
             User newSuperAdmin = new User();
@@ -124,7 +128,8 @@ public class Database {
     private void getNextIds() {
         // Get the book next ID
         List<Book> books = jsonDb.findAll(Book.class, (b1, b2) -> Long.compare(b2.getId(), b1.getId()));
-        nextBookId = books.get(0).getId() + 1;
+        if(books.size() == 0) nextBookId = 0;
+        else nextBookId = books.get(0).getId() + 1;
     }
 
     /**
@@ -155,6 +160,18 @@ public class Database {
 
         // Log the indexing end
         LOGGER.info("Indexing done !");
+    }
+
+    /**
+     * Get the jaccard distance for the count on the wanted book
+     *
+     * @param bookId The wanted book ID
+     * @param count The word count
+     * @return The jaccard distance in a double
+     */
+    private double getJaccard(int bookId, int count) {
+        Book book = jsonDb.findById(bookId, Book.class);
+        return ((double) count) / ((double) book.getWordCount());
     }
 
 
@@ -263,6 +280,73 @@ public class Database {
     }
 
     /**
+     * This method is used to get books from a query string in advanced mode or not
+     *
+     * @param query The query string
+     * @param advanced If the search is in advanced mode
+     * @return The list of books
+     * @throws DatabaseException If there is an error in the server interrogation
+     */
+    public List<Book> getBooks(String query, boolean advanced) throws DatabaseException {
+        // Prepare the result
+        Map<Integer, Integer> resultMap = new HashMap<>();
+
+        // If not advanced search
+        if(!advanced) {
+            // Prepare the working var
+            boolean multiple = false;
+
+            // Split the query into words
+            String[] words = query.split(" ");
+
+            // Iterate over words and get the associated books
+            for(String word : words) {
+                Map<Integer, Integer> countMap = getCountMap(word);
+
+                if(countMap != null) {
+                    if(!multiple) {
+                        resultMap.putAll(countMap);
+                        multiple = true;
+                    } else {
+                        for(int bookId : new HashSet<>(resultMap.keySet())) {
+                            if(!countMap.containsKey(bookId)) resultMap.remove(bookId);
+                        }
+                    }
+                }
+            }
+        } else {
+            // For each indexed word, verify if it matches the regular expression
+            for(String word : getIndexedWords()) {
+                try {
+                    if(word.matches(query)) {
+                        // Add all count to the result and ponderate it
+                        for(Map.Entry<Integer, Integer> entry : getCountMap(word).entrySet()) {
+                            resultMap.put(entry.getKey(), (resultMap.getOrDefault(entry.getKey(), entry.getValue()) + entry.getValue()) / 2);
+                        }
+                    }
+                } catch (Exception e) {
+                    throw new DatabaseException(e);
+                }
+            }
+        }
+
+        // Transform the result map into a sorted list
+        // The list sorting is done with the jaccard distance
+        List<Map.Entry<Integer, Integer>> entryList = new ArrayList<>(resultMap.entrySet());
+        entryList.sort((e1, e2) ->
+                Double.compare(getJaccard(e2.getKey(), e2.getValue()), getJaccard(e1.getKey(), e1.getValue())));
+
+        // Get the books
+        List<Book> res = new ArrayList<>();
+        for(Map.Entry<Integer, Integer> entry : entryList) {
+            res.add(jsonDb.findById(entry.getKey(), Book.class));
+        }
+
+        // Return the result
+        return res;
+    }
+
+    /**
      * Create a new book in the database
      *
      * @param title The book title
@@ -313,20 +397,43 @@ public class Database {
         }
 
         // Get the book words and add it to the index table
-        bookContent = bookContent.replaceAll("[\\[\\]\"_=+*/.|{}()~#&%<>`]", " ");
-        String[] words = bookContent.split("\\s+");
+        String[] words = Splitters.getSplitter(book.getLang()).split(bookContent);
+
+        // Update the book with word count
+        book.setWordCount(words.length);
+        jsonDb.upsert(book);
 
         for(String word : words) {
             // Set the word to the lower case
             word = word.toLowerCase(Locale.ROOT);
 
-            // Get the word count table of an empty table if it does not exist
-            Map<Integer, Integer> wordCountTable = indexTable.getOrDefault(word, new HashMap<>());
+            // Get the word count table or an empty table if it does not exist
+            Map<Integer, Integer> wordCountTable = getCountMap(word);
+            if(wordCountTable == null) wordCountTable = new HashMap<>();
             wordCountTable.put(book.getId(), wordCountTable.getOrDefault(book.getId(), 0) + 1);
 
             // Put the count table if absent from the index table
             indexTable.put(word, wordCountTable);
         }
+    }
+
+    /**
+     * Get the count map for a given word
+     *
+     * @param word The word
+     * @return The count map for the word, or null if it doesn't exists
+     */
+    private Map<Integer, Integer> getCountMap(String word) {
+        return indexTable.get(word);
+    }
+
+    /**
+     * Get the indexed words in a set
+     *
+     * @return The set of indexed words
+     */
+    private Set<String> getIndexedWords() {
+        return new HashSet<>(indexTable.keySet());
     }
 
 }

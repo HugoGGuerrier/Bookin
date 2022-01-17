@@ -1,8 +1,8 @@
 package fr.bookin.bookin_back.controllers;
 
-import fr.bookin.bookin_back.Utils;
+import fr.bookin.bookin_back.utils.Utils;
 import fr.bookin.bookin_back.database.Database;
-import fr.bookin.bookin_back.database.User;
+import fr.bookin.bookin_back.database.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +39,7 @@ public class LoginController {
      * @param request The HTTP request
      * @return The HTTP response
      */
+    @CrossOrigin(origins = "*")
     @PostMapping("")
     ResponseEntity<String> login(
             @RequestParam(name = "mail") String mail,
@@ -53,12 +54,12 @@ public class LoginController {
         if(user != null) {
             if(request.getSession().getAttribute("user") == null) {
                 request.getSession().setAttribute("user", user);
-                return ResponseEntity.ok("{success:true}");
+                return ResponseEntity.ok(Utils.getJsonResponse(true, null));
             } else {
-                return ResponseEntity.status(HttpStatus.I_AM_A_TEAPOT).body("{success:false, msg='You are already logged in'}");
+                return ResponseEntity.status(HttpStatus.I_AM_A_TEAPOT).body(Utils.getJsonResponse(false, "You are already logged in"));
             }
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{success:false, msg='Wrong mail or password'}");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Utils.getJsonResponse(false, "Wrong mail or password"));
         }
     }
 
@@ -74,11 +75,11 @@ public class LoginController {
         // Verify the session
         if(request.getSession(false) != null && request.getSession(false).getAttribute("user") != null) {
             request.getSession().invalidate();
-            return ResponseEntity.ok("{success:true}");
+            return ResponseEntity.ok(Utils.getJsonResponse(true, null));
         }
 
         // Return the unauthorized message
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{success:false, msg='You are not logged in'}");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Utils.getJsonResponse(false, "You are already logged in"));
     }
 
 }

@@ -1,6 +1,5 @@
-package fr.bookin.bookin_back.database;
+package fr.bookin.bookin_back.database.models;
 
-import fr.bookin.bookin_back.Utils;
 import io.jsondb.annotation.Document;
 import io.jsondb.annotation.Id;
 
@@ -19,6 +18,16 @@ public class User {
     private String mail;
     private String password;
     private int level;
+
+
+    // ===== Constructors =====
+
+
+    public User() {
+        this.mail = null;
+        this.password = null;
+        this.level = -1;
+    }
 
 
     // ===== Getters =====

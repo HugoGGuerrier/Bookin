@@ -2,6 +2,8 @@ package fr.bookin.bookin_back.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.bookin.bookin_back.database.Database;
+import fr.bookin.bookin_back.utils.Utils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,13 +45,13 @@ public class UserController {
 
 
     /**
-     * Get a user by mail
+     * Get a user by mail or all the user
      *
-     * @param mail The mail
+     * @param mail The mail, if null, the method will only return all users
      * @return The HTTP response with the user in JSON
      */
     @GetMapping("")
-    ResponseEntity<String> getUserByMail(
+    ResponseEntity<String> getUser(
             @RequestParam(name = "mail", required = false) String mail,
             HttpServletRequest request
     ) {
@@ -66,13 +68,13 @@ public class UserController {
                 }
             } catch (Exception e) {
                 LOGGER.error("Error in the objet mapping", e);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{success:false, msg='Error in the server'}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Utils.getJsonResponse(false, "Error in the server"));
             }
 
         }
 
         // Return the unauthorized message
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{success:false, msg='You are not an admin'}");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Utils.getJsonResponse(false, "You are not an admin"));
     }
 
 }

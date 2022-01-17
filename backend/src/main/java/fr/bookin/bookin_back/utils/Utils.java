@@ -1,9 +1,8 @@
-package fr.bookin.bookin_back;
+package fr.bookin.bookin_back.utils;
 
 import fr.bookin.bookin_back.database.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -48,6 +47,19 @@ public class Utils {
         }
 
         return res;
+    }
+
+    /**
+     * Return the JSON string for the response
+     * 
+     * @param success If the action is a success
+     * @param msg The message, it can be null
+     * @return The JSON string
+     */
+    public static String getJsonResponse(boolean success, String msg) {
+        return "{\"success\" : " + String.valueOf(success) + 
+            (msg == null ? "" : ", \"msg\" : \"" + msg + "\"") +
+            "}";
     }
 
 

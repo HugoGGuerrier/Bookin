@@ -47,6 +47,7 @@
 
 <script>
 import M from 'materialize-css'
+import axios from 'axios'
 
 export default {
   name: 'Login',
@@ -64,7 +65,30 @@ export default {
   methods: {
 
     login () {
-      M.toast({ html: 'TODO' })
+      if (this.mail === '' || this.password === '') {
+        this.wrongInput()
+        return
+      }
+
+      const formData = new FormData()
+      formData.append('mail', this.mail)
+      formData.append('pass', this.password)
+
+      axios.post(this.api + process.env.VUE_APP_LOGIN_ENDPOINT, formData)
+        .then(this.success)
+        .catch(this.fail)
+    },
+
+    wrongInput () {
+      M.toast({ html: 'Mail and password cannot be empty' })
+    },
+
+    success (r) {
+      sessionStorage.setItem('isAdmin', 'true')
+    },
+
+    fail (e) {
+      M.toast({ html: e.response.data.msg })
     }
 
   }

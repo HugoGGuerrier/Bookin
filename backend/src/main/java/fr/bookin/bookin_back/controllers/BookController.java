@@ -1,7 +1,12 @@
 package fr.bookin.bookin_back.controllers;
 
-import fr.bookin.bookin_back.database.Book;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.bookin.bookin_back.database.models.Book;
 import fr.bookin.bookin_back.database.Database;
+import fr.bookin.bookin_back.exceptions.DatabaseException;
+import fr.bookin.bookin_back.utils.Utils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.*;
+import java.util.List;
 
 /**
  * This controller handle all request for the books manipulation
@@ -56,8 +62,20 @@ public class BookController {
         // Cast the advanced parameter to a boolean
         boolean advanced = Boolean.parseBoolean(advancedString);
 
-        // TODO
-        return null;
+        try {
+            // Get the book list from the database
+            List<Book> books = database.getBooks(query, advanced);
+
+            // Transform the list with the object mapper
+            ObjectMapper mapper = new ObjectMapper();
+            return ResponseEntity.ok(mapper.writeValueAsString(books));
+        } catch (JsonProcessingException e) {
+            LOGGER.error("Error in object mapping", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Utils.getJsonResponse(false, "Error in the server"));
+        } catch (DatabaseException e) {
+            LOGGER.error("Error in the regex pattern", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Utils.getJsonResponse(false, "Error in regex"));
+        }
     }
 
     @PostMapping("")
@@ -85,19 +103,19 @@ public class BookController {
 
                     database.addBookToIndex(newBook);
 
-                    return ResponseEntity.ok("{success:true}");
+                    return ResponseEntity.ok(Utils.getJsonResponse(true, null));
                 } catch (Exception e) {
                     LOGGER.error("Cannot save the book file", e);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{success:false, msg='Cannot save the book file'}");
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Utils.getJsonResponse(false, "Cannot save the book file"));
                 }
 
             } else {
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("{success:false, msg='Server only accept non empty plain text files for now'}");
+                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(Utils.getJsonResponse(false, "Server only accept plain text files for now"));
             }
         }
 
         // Return the unauthorized message
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("{success:false, msg='You are not an admin'}");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Utils.getJsonResponse(false, "You are not an admin"));
     }
 
 }
