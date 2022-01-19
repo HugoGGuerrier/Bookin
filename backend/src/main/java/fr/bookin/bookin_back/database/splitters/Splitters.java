@@ -29,7 +29,7 @@ public class Splitters {
      * Initialize the splitters map
      */
     private static void init() {
-        splitters.put("fr", new FrenchSplitter());
+        splitters.put("fr", new DefaultSplitter());
         init = true;
     }
 

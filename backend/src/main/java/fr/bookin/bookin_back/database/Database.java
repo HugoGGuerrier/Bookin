@@ -1,17 +1,25 @@
 package fr.bookin.bookin_back.database;
 
+import fr.bookin.bookin_back.database.index.IndexDb;
+import fr.bookin.bookin_back.database.index.MongoIndexDb;
+import fr.bookin.bookin_back.database.index.PureIndexDb;
+import fr.bookin.bookin_back.database.index.mongo.MongoIndexRepository;
+import fr.bookin.bookin_back.database.index.mongo.MongoInfoRepository;
 import fr.bookin.bookin_back.database.models.Book;
 import fr.bookin.bookin_back.database.models.User;
 import fr.bookin.bookin_back.utils.Utils;
-import fr.bookin.bookin_back.database.splitters.Splitters;
 import fr.bookin.bookin_back.exceptions.DatabaseException;
 import io.jsondb.JsonDBTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.nio.file.Files;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
 /**
@@ -44,15 +52,23 @@ public class Database {
     /** The JSON database connection */
     private JsonDBTemplate jsonDb;
 
-    /** The book index table */
-    private final Map<String, Map<Integer, Integer>> indexTable;
+    /** The index database connection */
+    private IndexDb indexDb;
 
-    /** If the index is going to be stored (NOT YET AVAILABLE) */
+    /** If the index is going to be stored */
     @Value("${app.store_index}")
     private boolean storeIndex;
 
     /** The max book ID */
     private int nextBookId;
+
+    /** The pure index database singleton */
+    @Autowired
+    private PureIndexDb pureIndexDb;
+
+    /** The mongo db index database singleton */
+    @Autowired
+    private MongoIndexDb mongoIndexDb;
 
 
     // ===== Constructors =====
@@ -68,17 +84,13 @@ public class Database {
         this.databaseFileLocation = baseDir + "/data";
         this.booksDirectory = baseDir + "/data/books";
         this.jsonDb = null;
-        this.indexTable = new HashMap<>();
+        this.indexDb = null;
         this.nextBookId = 0;
     }
 
 
     // ===== Getters =====
 
-
-    public String getDatabaseFileLocation() {
-        return databaseFileLocation;
-    }
 
     public String getBooksDirectory() {
         return booksDirectory;
@@ -133,36 +145,6 @@ public class Database {
     }
 
     /**
-     * Create from the book in the database, the index table and store it in the database
-     */
-    private void initIndex() {
-        // Get all books and prepare the new index table
-        List<Book> books = getBooks();
-        long currentBook = 1L;
-
-        // Log the indexing because it's a big operation
-        LOGGER.info("Start the indexing...");
-
-        // For each book add words in the index table
-        for(Book book : books) {
-
-            // Display the progression
-            System.out.print("Progress : " + currentBook + "/" + books.size() + "\r");
-            System.out.flush();
-
-            // Add the book
-            addBookToIndex(book);
-
-            // Increase the book count
-            currentBook++;
-
-        }
-
-        // Log the indexing end
-        LOGGER.info("Indexing done !");
-    }
-
-    /**
      * Get the jaccard distance for the count on the wanted book
      *
      * @param bookId The wanted book ID
@@ -208,14 +190,17 @@ public class Database {
             if(!jsonDb.collectionExists(Book.class)) jsonDb.createCollection(Book.class);
             if(!jsonDb.collectionExists(User.class)) jsonDb.createCollection(User.class);
 
+            // Create the index database connection
+            indexDb = storeIndex ? mongoIndexDb : pureIndexDb;
+
             // Verify that there is a super admin
             verifySuperAdmin();
 
             // Get the next IDs once for all
             getNextIds();
 
-            // Initialize the index of all books
-            initIndex();
+            // Initialize the index database
+            indexDb.init(this);
         } catch (Exception e) {
             LOGGER.error("Cannot initialise the database !");
             throw new DatabaseException(e);
@@ -271,6 +256,90 @@ public class Database {
     // --- For Books
 
     /**
+     * Internal method to perform a simple query on the index table
+     *
+     * @param query The query string
+     * @return The map of book ids associated with the word count
+     */
+    private Map<Integer, Integer> makeSimpleQuery(String query) {
+        // Prepare the working var
+        Map<Integer, Integer> resultMap = new HashMap<>();
+        boolean multiple = false;
+
+        // Split the query into words
+        query = query.toLowerCase(Locale.ROOT);
+        String[] words = query.split(" ");
+
+        // Iterate over words and get the associated books
+        for(String word : words) {
+            // Test if the word is long enough
+            if(word.length() <= 2) continue;
+
+            // Get the index map
+            Map<Integer, Integer> indexMap = indexDb.getIndex(word);
+
+            // If this is the first query word
+            if(!multiple) {
+                if(indexMap != null) resultMap.putAll(indexMap);
+                multiple = true;
+            }
+
+            // Else
+            else {
+                // If the index is null, just return an empty map, no need to go further
+                if(indexMap == null) {
+                    resultMap.clear();
+                    return resultMap;
+                }
+
+                // Otherwise, do a meet operation between result and index
+                else {
+                    for(int bookId : new HashSet<>(resultMap.keySet())) {
+                        if(!indexMap.containsKey(bookId)) {
+                            resultMap.remove(bookId);
+                        } else {
+                            resultMap.put(bookId, (resultMap.get(bookId) + indexMap.get(bookId)) / 2);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Return the result
+        return resultMap;
+    }
+
+    /**
+     * Internal method to perform an advanced query in the index table
+     *
+     * @param regex The regular expression
+     * @return The map of books containing a word matching the regex
+     * @throws DatabaseException If there is an error in the regex
+     */
+    private Map<Integer, Integer> makeAdvancedQuery(String regex) throws DatabaseException {
+        // Prepare the working var
+        Map<Integer, Integer> resultMap = new HashMap<>();
+
+        // For each indexed word, verify if it matches the regular expression
+        for(String word : indexDb.getWords()) {
+            try {
+                if(word.matches(regex)) {
+                    // Add all count to the result and pondered it
+                    for(Map.Entry<Integer, Integer> entry : indexDb.getIndex(word).entrySet()) {
+                        resultMap.put(entry.getKey(), (resultMap.getOrDefault(entry.getKey(), entry.getValue()) + entry.getValue()) / 2);
+                    }
+                }
+            } catch (Exception e) {
+                throw new DatabaseException(e);
+            }
+        }
+
+        // Return the result
+        return resultMap;
+    }
+
+
+    /**
      * Get all books in the database
      *
      * @return The list with all the books
@@ -287,48 +356,9 @@ public class Database {
      * @return The list of books
      * @throws DatabaseException If there is an error in the server interrogation
      */
-    public List<Book> getBooks(String query, boolean advanced) throws DatabaseException {
+    public List<Book> getBooksQuery(String query, boolean advanced) throws DatabaseException {
         // Prepare the result
-        Map<Integer, Integer> resultMap = new HashMap<>();
-
-        // If not advanced search
-        if(!advanced) {
-            // Prepare the working var
-            boolean multiple = false;
-
-            // Split the query into words
-            String[] words = query.split(" ");
-
-            // Iterate over words and get the associated books
-            for(String word : words) {
-                Map<Integer, Integer> countMap = getCountMap(word);
-
-                if(countMap != null) {
-                    if(!multiple) {
-                        resultMap.putAll(countMap);
-                        multiple = true;
-                    } else {
-                        for(int bookId : new HashSet<>(resultMap.keySet())) {
-                            if(!countMap.containsKey(bookId)) resultMap.remove(bookId);
-                        }
-                    }
-                }
-            }
-        } else {
-            // For each indexed word, verify if it matches the regular expression
-            for(String word : getIndexedWords()) {
-                try {
-                    if(word.matches(query)) {
-                        // Add all count to the result and ponderate it
-                        for(Map.Entry<Integer, Integer> entry : getCountMap(word).entrySet()) {
-                            resultMap.put(entry.getKey(), (resultMap.getOrDefault(entry.getKey(), entry.getValue()) + entry.getValue()) / 2);
-                        }
-                    }
-                } catch (Exception e) {
-                    throw new DatabaseException(e);
-                }
-            }
-        }
+        Map<Integer, Integer> resultMap = advanced ? makeAdvancedQuery(query) : makeSimpleQuery(query);
 
         // Transform the result map into a sorted list
         // The list sorting is done with the jaccard distance
@@ -352,9 +382,9 @@ public class Database {
      * @param title The book title
      * @param authors The book authors
      * @param lang The book lang
-     * @return The newly created book
+     * @param bookFile The uploaded file for the book
      */
-    public synchronized Book addBook(String title, String[] authors, String lang) {
+    public synchronized void addBook(String title, String[] authors, String lang, MultipartFile bookFile) throws IOException {
         // Create the new book
         Book newBook = new Book();
         newBook.setId(nextBookId++);
@@ -364,76 +394,26 @@ public class Database {
             newBook.addAuthor(author);
         }
 
+        // Save the book file
+        File newFile = new File(booksDirectory + "/" + newBook.getId() + ".txt");
+        OutputStream outputStream = new FileOutputStream(newFile);
+        outputStream.write(bookFile.getBytes());
+        outputStream.close();
+
         // Add in the database
         jsonDb.insert(newBook);
 
-        // Return the book
-        return newBook;
+        // Update the book index
+        indexDb.indexBook(newBook, newFile);
     }
 
-    // --- For index
-
     /**
-     * Add a book to the index
+     * Update a book in the database
      *
-     * @param book The book to add
+     * @param book The book to update
      */
-    public void addBookToIndex(Book book) {
-        // Verify that the book file exists, and read it
-        File bookFile = new File(booksDirectory + "/" + book.getId() + ".txt");
-        if(!bookFile.exists()) {
-            LOGGER.error("File for book " + book.getId() + " does not exist");
-            jsonDb.remove(book, Book.class);
-            return;
-        }
-
-        String bookContent = "";
-
-        try {
-            bookContent = Files.readString(bookFile.toPath());
-        } catch (Exception e) {
-            LOGGER.error("Cannot open " + book.getId() + " book file", e);
-            return;
-        }
-
-        // Get the book words and add it to the index table
-        String[] words = Splitters.getSplitter(book.getLang()).split(bookContent);
-
-        // Update the book with word count
-        book.setWordCount(words.length);
+    public synchronized void updateBook(Book book) {
         jsonDb.upsert(book);
-
-        for(String word : words) {
-            // Set the word to the lower case
-            word = word.toLowerCase(Locale.ROOT);
-
-            // Get the word count table or an empty table if it does not exist
-            Map<Integer, Integer> wordCountTable = getCountMap(word);
-            if(wordCountTable == null) wordCountTable = new HashMap<>();
-            wordCountTable.put(book.getId(), wordCountTable.getOrDefault(book.getId(), 0) + 1);
-
-            // Put the count table if absent from the index table
-            indexTable.put(word, wordCountTable);
-        }
-    }
-
-    /**
-     * Get the count map for a given word
-     *
-     * @param word The word
-     * @return The count map for the word, or null if it doesn't exists
-     */
-    private Map<Integer, Integer> getCountMap(String word) {
-        return indexTable.get(word);
-    }
-
-    /**
-     * Get the indexed words in a set
-     *
-     * @return The set of indexed words
-     */
-    private Set<String> getIndexedWords() {
-        return new HashSet<>(indexTable.keySet());
     }
 
 }

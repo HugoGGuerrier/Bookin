@@ -100,7 +100,7 @@ public class GutenbergProvider implements IProvider {
 
         // Prepare the working vars
         int currentPage = 1;
-        long bookCount = 0;
+        int bookCount = 0;
         JSONParser jsonParser = new JSONParser();
 
         // While there is a next page, continue
@@ -169,7 +169,7 @@ public class GutenbergProvider implements IProvider {
      *
      * @param bookJson The JSON of the book
      */
-    private boolean downloadBook(JSONObject bookJson, long id) {
+    private boolean downloadBook(JSONObject bookJson, int id) {
         // Get the book information
         String title = (String) bookJson.getOrDefault("title", "Unknown title");
         String lang = (String) ((JSONArray) bookJson.get("languages")).get(0);

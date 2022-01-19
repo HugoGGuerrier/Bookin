@@ -64,7 +64,7 @@ public class BookController {
 
         try {
             // Get the book list from the database
-            List<Book> books = database.getBooks(query, advanced);
+            List<Book> books = database.getBooksQuery(query, advanced);
 
             // Transform the list with the object mapper
             ObjectMapper mapper = new ObjectMapper();
@@ -91,17 +91,9 @@ public class BookController {
             // Verify the file type
             if("text/plain".equals(file.getContentType()) && !file.isEmpty()) {
 
-                // Create the new book
-                Book newBook = database.addBook(title, authors, lang);
-
-                // Save the file
                 try {
-                    File newFile = new File(database.getBooksDirectory() + "/" + newBook.getId() + ".txt");
-                    OutputStream outputStream = new FileOutputStream(newFile);
-                    outputStream.write(file.getBytes());
-                    outputStream.close();
-
-                    database.addBookToIndex(newBook);
+                    // Insert the book in the database
+                    database.addBook(title, authors, lang, file);
 
                     return ResponseEntity.ok(Utils.getJsonResponse(true, null));
                 } catch (Exception e) {
