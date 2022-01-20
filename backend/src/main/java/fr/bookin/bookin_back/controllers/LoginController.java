@@ -32,6 +32,19 @@ public class LoginController {
 
 
     /**
+     * HTTP method to get if the client is logged in
+     *
+     * @return The HTTP response containing the log status of the client
+     */
+    @GetMapping("")
+    ResponseEntity<String> isLoggedIn(HttpServletRequest request) {
+        if(request.getSession(false) != null && request.getSession(false).getAttribute("user") != null) {
+            return ResponseEntity.ok(Utils.getJsonResponse(true, null));
+        }
+        return ResponseEntity.ok(Utils.getJsonResponse(false, null));
+    }
+
+    /**
      * Login a user by the mail and password
      *
      * @param mail The user mail
@@ -39,7 +52,6 @@ public class LoginController {
      * @param request The HTTP request
      * @return The HTTP response
      */
-    @CrossOrigin(origins = "*")
     @PostMapping("")
     ResponseEntity<String> login(
             @RequestParam(name = "mail") String mail,
@@ -70,6 +82,7 @@ public class LoginController {
      * @param request The HTTP request
      * @return The response in a string
      */
+    @CrossOrigin(origins = "localhost:9000")
     @DeleteMapping("")
     ResponseEntity<String> logout(HttpServletRequest request) {
         // Verify the session

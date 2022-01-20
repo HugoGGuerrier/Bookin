@@ -3,8 +3,6 @@ package fr.bookin.bookin_back.database;
 import fr.bookin.bookin_back.database.index.IndexDb;
 import fr.bookin.bookin_back.database.index.MongoIndexDb;
 import fr.bookin.bookin_back.database.index.PureIndexDb;
-import fr.bookin.bookin_back.database.index.mongo.MongoIndexRepository;
-import fr.bookin.bookin_back.database.index.mongo.MongoInfoRepository;
 import fr.bookin.bookin_back.database.models.Book;
 import fr.bookin.bookin_back.database.models.User;
 import fr.bookin.bookin_back.utils.Utils;
@@ -21,6 +19,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This class represents the database communication singleton
@@ -145,13 +145,13 @@ public class Database {
     }
 
     /**
-     * Get the jaccard distance for the count on the wanted book
+     * Get the proportion of a count in a given book
      *
      * @param bookId The wanted book ID
      * @param count The word count
-     * @return The jaccard distance in a double
+     * @return The proportion in a double
      */
-    private double getJaccard(int bookId, int count) {
+    private double getProportion(int bookId, int count) {
         Book book = jsonDb.findById(bookId, Book.class);
         return ((double) count) / ((double) book.getWordCount());
     }
@@ -276,7 +276,7 @@ public class Database {
             if(word.length() <= 2) continue;
 
             // Get the index map
-            Map<Integer, Integer> indexMap = indexDb.getIndex(word);
+            Map<Integer, Integer> indexMap = indexDb.getAssociatedDocuments(word);
 
             // If this is the first query word
             if(!multiple) {
@@ -320,12 +320,16 @@ public class Database {
         // Prepare the working var
         Map<Integer, Integer> resultMap = new HashMap<>();
 
+        // Compile the regular expression to increase performance
+        Pattern pattern = Pattern.compile(regex);
+
         // For each indexed word, verify if it matches the regular expression
         for(String word : indexDb.getWords()) {
             try {
-                if(word.matches(regex)) {
+                Matcher m = pattern.matcher(word);
+                if(m.matches()) {
                     // Add all count to the result and pondered it
-                    for(Map.Entry<Integer, Integer> entry : indexDb.getIndex(word).entrySet()) {
+                    for(Map.Entry<Integer, Integer> entry : indexDb.getAssociatedDocuments(word).entrySet()) {
                         resultMap.put(entry.getKey(), (resultMap.getOrDefault(entry.getKey(), entry.getValue()) + entry.getValue()) / 2);
                     }
                 }
@@ -364,7 +368,7 @@ public class Database {
         // The list sorting is done with the jaccard distance
         List<Map.Entry<Integer, Integer>> entryList = new ArrayList<>(resultMap.entrySet());
         entryList.sort((e1, e2) ->
-                Double.compare(getJaccard(e2.getKey(), e2.getValue()), getJaccard(e1.getKey(), e1.getValue())));
+                Double.compare(getProportion(e2.getKey(), e2.getValue()), getProportion(e1.getKey(), e1.getValue())));
 
         // Get the books
         List<Book> res = new ArrayList<>();

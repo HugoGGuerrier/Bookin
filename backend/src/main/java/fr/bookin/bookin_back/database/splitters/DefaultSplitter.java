@@ -2,6 +2,12 @@ package fr.bookin.bookin_back.database.splitters;
 
 import java.util.Arrays;
 
+/**
+ * This is the default text splitter, it's used during tests
+ *
+ * @author Emilie SIAU
+ * @author Hugo GUERRIER
+ */
 public class DefaultSplitter implements ISplitter {
     @Override
     public String[] split(String text) {

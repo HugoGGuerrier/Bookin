@@ -12,9 +12,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * This class contains the configuration of the spring boot application
+ *
+ * @author Emilie SIAU
+ * @author Hugo GUERRIER
  */
 @Configuration
 @EnableMongoRepositories(basePackages = "fr.bookin.bookin_back.database.index.mongo")
@@ -22,6 +27,9 @@ public class Config {
 
     // ===== Attributes =====
 
+
+    @Value(value = "${app.debug}")
+    private boolean debug;
 
     @Value(value = "${mongo.db_name}")
     private String mongoDbName;
@@ -65,4 +73,19 @@ public class Config {
         // Get the mongo template to perform advanced request
         return new MongoTemplate(mongo(), mongoDbName);
     }
+
+    @Bean
+	public WebMvcConfigurer corsConfigurer() {
+		return new WebMvcConfigurer() {
+			@Override
+			public void addCorsMappings(CorsRegistry registry) {
+                if(debug) {
+                    registry.addMapping("/**")
+                            .allowedOrigins("http://localhost:9000")
+                            .allowCredentials(true);
+                }
+			}
+		};
+	}
+
 }

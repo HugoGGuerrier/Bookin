@@ -86,9 +86,9 @@ public class PureIndexDb implements IndexDb {
         return indexTable.keySet();
     }
 
-    /** @see IndexDb#getIndex(String) */
+    /** @see IndexDb#getAssociatedDocuments(String) */
     @Override
-    public Map<Integer, Integer> getIndex(String word) {
+    public Map<Integer, Integer> getAssociatedDocuments(String word) {
         return indexTable.get(word);
     }
 
@@ -109,7 +109,7 @@ public class PureIndexDb implements IndexDb {
             word = word.toLowerCase(Locale.ROOT);
 
             // Get the word count table or an empty table if it does not exist
-            Map<Integer, Integer> wordCountTable = getIndex(word);
+            Map<Integer, Integer> wordCountTable = getAssociatedDocuments(word);
             if(wordCountTable == null) wordCountTable = new HashMap<>();
             wordCountTable.put(book.getId(), wordCountTable.getOrDefault(book.getId(), 0) + 1);
 

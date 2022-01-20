@@ -33,7 +33,7 @@ public interface IndexDb {
      * @param word The word
      * @return The index map
      */
-    Map<Integer, Integer> getIndex(String word);
+    Map<Integer, Integer> getAssociatedDocuments(String word);
 
     /**
      * Index the given book and update it with the word count

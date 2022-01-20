@@ -101,6 +101,9 @@ public class MongoIndexDb implements IndexDb {
 
         // Update the database info
         mongoTemplate.save(info);
+
+        // Log the indexing end
+        LOGGER.info("Indexing done !");
     }
 
     /** @see IndexDb#getWords() */
@@ -119,9 +122,9 @@ public class MongoIndexDb implements IndexDb {
         return words;
     }
 
-    /** @see IndexDb#getIndex(String) */
+    /** @see IndexDb#getAssociatedDocuments(String) */
     @Override
-    public Map<Integer, Integer> getIndex(String word) {
+    public Map<Integer, Integer> getAssociatedDocuments(String word) {
         Optional<MongoIndex> indexOptional = indexRepository.findById(word.hashCode());
         return indexOptional.map(MongoIndex::getIndexMap).orElse(null);
     }

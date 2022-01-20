@@ -83,8 +83,10 @@ export default {
       M.toast({ html: 'Mail and password cannot be empty' })
     },
 
-    success (r) {
+    success () {
       sessionStorage.setItem('isAdmin', 'true')
+      this.updateAdminNav()
+      this.$router.push('admin')
     },
 
     fail (e) {
