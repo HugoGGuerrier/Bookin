@@ -60,10 +60,6 @@ public class MongoIndexDb implements IndexDb {
     /** @see IndexDb#init(Database) */
     @Override
     public void init(Database database) {
-        // Get the mongo information
-        Optional<MongoInfo> infoOptional = infoRepository.findById(MongoInfo.CURRENT_ID);
-        MongoInfo info = infoOptional.orElseGet(MongoInfo::new);
-
         // Prepare the working vars
         List<Book> books = database.getBooks();
         String bookDir = database.getBooksDirectory();
@@ -78,29 +74,17 @@ public class MongoIndexDb implements IndexDb {
             System.out.print("Progress : " + currentBook + "/" + books.size() + "\r");
             System.out.flush();
 
-            // If the book is already indexed, just skip it
-            if(!info.getIndexedBooks().contains(book.getId())) {
-                // Insert the book in the index
-                try {
-                    indexBook(book, new File(bookDir + "/" + book.getId() + ".txt"));
-                } catch (IOException e) {
-                    LOGGER.error("Cannot open a book file", e);
-                }
-
-                // Update the book in the database
-                database.updateBook(book);
-
-                // Say the info the book is inserted
-                info.getIndexedBooks().add(book.getId());
+            // Insert the book in the index
+            try {
+                indexBook(book, new File(bookDir + "/" + book.getId() + ".txt"));
+            } catch (IOException e) {
+                LOGGER.error("Cannot open a book file", e);
             }
 
             // Increase the book count
             currentBook++;
 
         }
-
-        // Update the database info
-        mongoTemplate.save(info);
 
         // Log the indexing end
         LOGGER.info("Indexing done !");
@@ -132,14 +116,19 @@ public class MongoIndexDb implements IndexDb {
     /** @see IndexDb#indexBook(Book, File) */
     @Override
     public void indexBook(Book book, File bookFile) throws IOException {
+        // Get the mongo information and add the book id to it
+        MongoInfo info = infoRepository.findById(MongoInfo.CURRENT_ID).orElseGet(MongoInfo::new);
+        if(info.getIndexedBooks().contains(book.getId())) {
+            return;
+        }
+        info.getIndexedBooks().add(book.getId());
+        mongoTemplate.save(info);
+
         // Get the book content in a string
         String bookContent = Files.readString(bookFile.toPath());
 
         // Get the book words and add it to the index table
         String[] words = Splitters.getSplitter(book.getLang()).split(bookContent);
-
-        // Update the book with word count
-        book.setWordCount(words.length);
 
         for(String word : words) {
             // Set the word to the lower case

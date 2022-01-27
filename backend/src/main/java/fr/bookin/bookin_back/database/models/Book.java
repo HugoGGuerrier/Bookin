@@ -4,7 +4,9 @@ import io.jsondb.annotation.Document;
 import io.jsondb.annotation.Id;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class is a book POJO, it MUST BE synchronized with the Bookin book downloader class
@@ -24,6 +26,7 @@ public class Book {
     private List<String> authors;
     private String lang;
     private long wordCount;
+    private Map<Integer, Double> distances;
 
 
     // ===== Constructors =====
@@ -34,6 +37,7 @@ public class Book {
         this.authors = new ArrayList<>();
         this.lang = null;
         this.wordCount = 0;
+        this.distances = new HashMap<>();
     }
 
 
@@ -58,6 +62,10 @@ public class Book {
 
     public long getWordCount() {
         return wordCount;
+    }
+
+    public Map<Integer, Double> getDistances() {
+        return distances;
     }
 
 
@@ -92,6 +100,10 @@ public class Book {
         this.wordCount = wordCount;
     }
 
+    public void setDistances(Map<Integer, Double> distances) {
+        this.distances = distances;
+    }
+
 
     // ===== Override methods =====
 
@@ -104,6 +116,7 @@ public class Book {
                 " authors=" + authors +
                 " lang=" + lang +
                 " wordCount=" + wordCount +
+                " distances=" + distances +
                 "}";
     }
 

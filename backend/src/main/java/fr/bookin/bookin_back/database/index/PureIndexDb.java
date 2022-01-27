@@ -69,9 +69,6 @@ public class PureIndexDb implements IndexDb {
                 LOGGER.error("Cannot open a book file", e);
             }
 
-            // Update the book in the database
-            database.updateBook(book);
-
             // Increase the book count
             currentBook++;
         }
@@ -100,9 +97,6 @@ public class PureIndexDb implements IndexDb {
 
         // Get the book words and add it to the index table
         String[] words = Splitters.getSplitter(book.getLang()).split(bookContent);
-
-        // Update the book with word count
-        book.setWordCount(words.length);
 
         for(String word : words) {
             // Set the word to the lower case

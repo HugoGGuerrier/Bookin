@@ -5,6 +5,7 @@ import fr.bookin.bookin_back.database.index.MongoIndexDb;
 import fr.bookin.bookin_back.database.index.PureIndexDb;
 import fr.bookin.bookin_back.database.models.Book;
 import fr.bookin.bookin_back.database.models.User;
+import fr.bookin.bookin_back.database.splitters.Splitters;
 import fr.bookin.bookin_back.utils.Utils;
 import fr.bookin.bookin_back.exceptions.DatabaseException;
 import io.jsondb.JsonDBTemplate;
@@ -18,6 +19,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -145,6 +147,33 @@ public class Database {
     }
 
     /**
+     * Verify the book word counts and compute the distance from every book to every book
+     */
+    private void verifyBooks() {
+        // Get all the books from the database and verify its word count and distances
+        List<Book> books = getBooks();
+        int currentBook = 1;
+
+        // Log the computing because it's a big operation
+        LOGGER.info("Start the jaccard distances computing...");
+
+        for(Book book : books) {
+            // Display the progression
+            System.out.print("Progress : " + currentBook + "/" + books.size() + "\r");
+            System.out.flush();
+
+            // Compute the jaccard for the book if it doesn't exist
+            if(book.getWordCount() <= 1 || book.getDistances().isEmpty()) computeJaccards(book);
+
+            // Increase the current book
+            currentBook++;
+        }
+
+        // Log the computing because it's a big operation
+        LOGGER.info("Jaccard distances computing done !");
+    }
+
+    /**
      * Get the proportion of a count in a given book
      *
      * @param bookId The wanted book ID
@@ -199,7 +228,10 @@ public class Database {
             // Get the next IDs once for all
             getNextIds();
 
-            // Initialize the index database
+            // Verify the book word counts and distances
+            verifyBooks();
+
+            // Initialize the book index
             indexDb.init(this);
         } catch (Exception e) {
             LOGGER.error("Cannot initialise the database !");
@@ -342,6 +374,73 @@ public class Database {
         return resultMap;
     }
 
+    /**
+     * Compute the word count and the Jaccard distances for the given book
+     *
+     * @param book The book
+     */
+    private void computeJaccards(Book book) {
+        // Get the book content
+        File bookFile = new File(booksDirectory + "/" + book.getId() + ".txt");
+        String bookContent = "";
+        try {
+            bookContent = Files.readString(bookFile.toPath());
+        } catch (IOException e) {
+            LOGGER.error("Error in reading book " + book.getId(), e);
+            return;
+        }
+
+        // Split the book content into words
+        String[] bookWords = Splitters.getSplitter(book.getLang()).split(bookContent);
+        book.setWordCount(bookWords.length);
+
+        // For every other book, if the distance is not present, get the content and compute it
+        for(Book other : getBooks()) {
+
+            // If the other book is the same as the current book
+            if(other.getId() == book.getId()) {
+                book.getDistances().put(book.getId(), 1.0d);
+            }
+
+            // Else, if the distance is unknown in both book
+            else if(!other.getDistances().containsKey(book.getId()) && !book.getDistances().containsKey(other.getId())) {
+                // Get the other book content
+                File otherFile = new File(booksDirectory + "/" + other.getId() + ".txt");
+                String otherContent = null;
+                try {
+                    otherContent = Files.readString(otherFile.toPath());
+                } catch (IOException e) {
+                    LOGGER.error("Error in reading book " + other.getId(), e);
+                    continue;
+                }
+
+                // Get the other words
+                String[] otherWords = Splitters.getSplitter(other.getLang()).split(otherContent);
+
+                // Get the distance between the two texts and store it in the database
+                double distance = Utils.getDistance(bookWords, otherWords);
+                other.getDistances().put(book.getId(), distance);
+                book.getDistances().put(other.getId(), distance);
+
+            }
+
+            // If the distance is only known in the other book, transfer it to the current book
+            else if(other.getDistances().containsKey(book.getId())) {
+                book.getDistances().put(other.getId(), other.getDistances().get(book.getId()));
+            }
+
+            // Else transfer from the current book to the other anyway
+            else {
+                other.getDistances().put(book.getId(), book.getDistances().get(other.getId()));
+            }
+
+            // Update the book in the database
+            jsonDb.upsert(other);
+            jsonDb.upsert(book);
+
+        }
+    }
+
 
     /**
      * Get all books in the database
@@ -406,6 +505,9 @@ public class Database {
 
         // Add in the database
         jsonDb.insert(newBook);
+
+        // Compute the word count and the jaccard distances for this book
+        computeJaccards(newBook);
 
         // Update the book index
         indexDb.indexBook(newBook, newFile);
