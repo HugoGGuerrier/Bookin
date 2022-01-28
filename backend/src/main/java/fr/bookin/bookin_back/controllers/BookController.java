@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.bookin.bookin_back.database.models.Book;
 import fr.bookin.bookin_back.database.Database;
+import fr.bookin.bookin_back.database.models.BookMixin;
 import fr.bookin.bookin_back.exceptions.DatabaseException;
 import fr.bookin.bookin_back.utils.Utils;
 
@@ -15,7 +16,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -56,7 +60,8 @@ public class BookController {
     @GetMapping("")
     ResponseEntity<String> getBooks(
             @RequestParam(name = "q") String query,
-            @RequestParam(name = "advanced", required = false) String advancedString
+            @RequestParam(name = "advanced", required = false) String advancedString,
+            HttpServletResponse response
     ) {
         // Cast the advanced parameter to a boolean
         boolean advanced = Boolean.parseBoolean(advancedString);
@@ -67,6 +72,17 @@ public class BookController {
 
             // Transform the list with the object mapper
             ObjectMapper mapper = new ObjectMapper();
+            mapper.addMixIn(Book.class, BookMixin.class);
+
+            // Get the three first result and set the cookie
+            List<Integer> bookIds = new ArrayList<>();
+            for(int i = 0 ; i < 3 ; i++) {
+                bookIds.add(books.get(i).getId());
+            }
+            System.out.println(mapper.writeValueAsString(bookIds));
+            response.addCookie(new Cookie("previous_result", mapper.writeValueAsString(bookIds)));
+
+            // Return the result
             return ResponseEntity.ok(mapper.writeValueAsString(books));
         } catch (JsonProcessingException e) {
             LOGGER.error("Error in object mapping", e);
@@ -75,6 +91,44 @@ public class BookController {
             LOGGER.error("Error in the regex pattern", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Utils.getJsonResponse(false, "Error in regex"));
         }
+    }
+
+    @GetMapping("/suggestion")
+    ResponseEntity<String> getSuggestion(HttpServletRequest request) {
+        // Get the previous answer cookie
+        Cookie[] cookies = request.getCookies();
+        String previousRes = null;
+        for(Cookie cookie : cookies) {
+            if(cookie.getName().equals("previous_result")) previousRes = cookie.getValue();
+        }
+
+        // If the previous res is known, parse it and get the suggestions
+        if(previousRes != null) {
+            try {
+
+                // Parse the previous result
+                ObjectMapper mapper = new ObjectMapper();
+                Integer[] previousResult = mapper.readValue(previousRes, Integer[].class);
+
+                // Get the suggestions in a list
+                List<Book> result = new ArrayList<>();
+                for(Integer bookId : previousResult) {
+                    result.addAll(database.getSuggestions(bookId, 3));
+                }
+
+                // Return the result
+                mapper = new ObjectMapper();
+                mapper.addMixIn(Book.class, BookMixin.class);
+                return ResponseEntity.ok(mapper.writeValueAsString(result));
+
+            } catch (Exception e) {
+                LOGGER.error("Error in object mapping", e);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Utils.getJsonResponse(false, "Error in the server"));
+            }
+        }
+
+        // Return the default result
+        else return ResponseEntity.ok("{}");
     }
 
     @PostMapping("")

@@ -480,6 +480,31 @@ public class Database {
     }
 
     /**
+     * Get the number of suggestions for the wanted book based on the jaccard distance
+     *
+     * @param bookId The book id
+     * @param number The number of suggestion you want
+     * @return The suggestions for the book
+     */
+    public List<Book> getSuggestions(int bookId, int number) {
+        // Prepare the working vars
+        List<Book> res = new ArrayList<>();
+
+        // Get the book and sort the distance by decending order
+        Book theBook = jsonDb.findById(bookId, Book.class);
+        List<Integer> bookIds = new ArrayList<>(theBook.getDistances().keySet());
+        bookIds.sort((bid1, bid2) -> Double.compare(theBook.getDistances().get(bid2), theBook.getDistances().get(bid1)));
+
+        // Get the wanted number of books
+        for(int i = 0 ; i < number && i < bookIds.size() ; i++) {
+            res.add(jsonDb.findById(bookIds.get(i), Book.class));
+        }
+
+        // Return the result
+        return res;
+    }
+
+    /**
      * Create a new book in the database
      *
      * @param title The book title
