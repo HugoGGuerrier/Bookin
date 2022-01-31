@@ -8,7 +8,7 @@
 
     <div class="row grey-text text-darken-3">
       <p>
-        Version : 0.1.0<br><br>
+        Version : 0.4.2<br><br>
         Authors : Emilie SIAU and Hugo GUERRIER<br>
         Powered by : <a
           href="https://vuejs.org/"

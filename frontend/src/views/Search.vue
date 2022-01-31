@@ -43,19 +43,30 @@
         </div>
       </div>
     </div>
+
+    <div class="row">
+      <div class="col s12 m4 l3" v-for="book of books" :key="book.id">
+        <book-card :title="book.title" :authors="book.authors" :lang="book.lang" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import M from 'materialize-css'
+import axios from 'axios'
+import BookCard from '../components/BookCard.vue'
 
 export default {
   name: 'Search',
 
+  components: { BookCard },
+
   data () {
     const q = ''
     const advanced = false
-    return { q, advanced }
+    const books = []
+    return { q, advanced, books }
   },
 
   mounted () {
@@ -63,8 +74,26 @@ export default {
   },
 
   methods: {
+
     sendQuery () {
-      M.toast({ html: 'Send the query "' + this.q + '" in ' + (this.advanced ? 'advanced' : 'simple') + ' mode' })
+      if (this.q.length < 3) {
+        M.toast({ html: 'Query must be more the 2 character' })
+        return
+      }
+
+      axios.get(this.api + process.env.VUE_APP_BOOK_ENDPOINT, { params: { q: this.q, advanced: this.advanced } })
+        .then(r => {
+          console.log(r.data)
+          this.displayBooks(r.data)
+        })
+        .catch(e => {
+          console.log(e)
+          M.toast({ html: 'Error in book searching' })
+        })
+    },
+
+    displayBooks (books) {
+      this.books = books
     }
   }
 }

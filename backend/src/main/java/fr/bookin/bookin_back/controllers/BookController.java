@@ -75,12 +75,11 @@ public class BookController {
             mapper.addMixIn(Book.class, BookMixin.class);
 
             // Get the three first result and set the cookie
-            List<Integer> bookIds = new ArrayList<>();
-            for(int i = 0 ; i < 3 ; i++) {
-                bookIds.add(books.get(i).getId());
+            List<String> bookIds = new ArrayList<>();
+            for(int i = 0 ; i < 3 && i < books.size() ; i++) {
+                bookIds.add(String.valueOf(books.get(i).getId()));
             }
-            System.out.println(mapper.writeValueAsString(bookIds));
-            response.addCookie(new Cookie("previous_result", mapper.writeValueAsString(bookIds)));
+            response.addCookie(new Cookie("previous_result", String.join(":", bookIds)));
 
             // Return the result
             return ResponseEntity.ok(mapper.writeValueAsString(books));
@@ -107,17 +106,22 @@ public class BookController {
             try {
 
                 // Parse the previous result
-                ObjectMapper mapper = new ObjectMapper();
-                Integer[] previousResult = mapper.readValue(previousRes, Integer[].class);
+                String[] previousIds = previousRes.split(":");
 
                 // Get the suggestions in a list
                 List<Book> result = new ArrayList<>();
-                for(Integer bookId : previousResult) {
-                    result.addAll(database.getSuggestions(bookId, 3));
+                for(String bookIdString : previousIds) {
+                    int bookId = -1;
+                    try {
+                        bookId = Integer.parseInt(bookIdString);
+                        result.addAll(database.getSuggestions(bookId, 3));
+                    } catch (NumberFormatException e) {
+                        LOGGER.error("Cannot parse the integer " + bookIdString, e);
+                    }
                 }
 
                 // Return the result
-                mapper = new ObjectMapper();
+                ObjectMapper mapper = new ObjectMapper();
                 mapper.addMixIn(Book.class, BookMixin.class);
                 return ResponseEntity.ok(mapper.writeValueAsString(result));
 

@@ -496,8 +496,14 @@ public class Database {
         bookIds.sort((bid1, bid2) -> Double.compare(theBook.getDistances().get(bid2), theBook.getDistances().get(bid1)));
 
         // Get the wanted number of books
-        for(int i = 0 ; i < number && i < bookIds.size() ; i++) {
-            res.add(jsonDb.findById(bookIds.get(i), Book.class));
+        int i = 0;
+        int cpt = 0;
+        while(cpt < number && i < bookIds.size()) {
+            if(bookIds.get(i) != bookId) {
+                res.add(jsonDb.findById(bookIds.get(i), Book.class));
+                cpt++;
+            }
+            i++;
         }
 
         // Return the result
